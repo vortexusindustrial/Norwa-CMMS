@@ -61,14 +61,14 @@ const objectives = [
           >
             Sign In
           </RouterLink>
-          <a
+          <!-- <a
             href="https://frappeframework.com/"
             target="_blank"
             rel="noopener"
             class="rounded-md border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-white"
           >
             About Frappe Framework
-          </a>
+          </a> -->
         </div>
       </div>
     </section>
