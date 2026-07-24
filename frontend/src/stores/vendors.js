@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { vendors as mockVendors } from '../data/vendors'
 
+// persist: true (see stores/persistPlugin.js) keeps vendor edits across a reload.
 export const useVendorsStore = defineStore('vendors', () => {
   const vendors = ref(mockVendors)
 
@@ -41,4 +42,4 @@ export const useVendorsStore = defineStore('vendors', () => {
     updateVendor,
     toggleVendorStatus,
   }
-})
+}, { persist: true })

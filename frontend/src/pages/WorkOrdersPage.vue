@@ -16,7 +16,8 @@ const store = useWorkOrdersStore()
 const { accessLevel } = usePermissions()
 const route = useRoute()
 
-const activeTab = ref('queue') // 'queue' | 'board' | 'labor'
+const VALID_TABS = ['queue', 'board', 'labor']
+const activeTab = ref(VALID_TABS.includes(route.query.tab) ? route.query.tab : 'queue')
 const showAssignmentBoard = computed(() => accessLevel('workOrders.assignmentBoard') !== 'none')
 
 const showNewWoMenu = ref(route.query.create === 'true' || route.query.create === 'emergency')
@@ -90,7 +91,8 @@ const filteredQueue = computed(() => {
   })
 })
 
-const selectedWorkOrderId = ref(baseQueue.value[0]?.id ?? null)
+const requestedWorkOrderId = baseQueue.value.find((wo) => wo.id === route.query.wo)?.id ?? null
+const selectedWorkOrderId = ref(requestedWorkOrderId ?? baseQueue.value[0]?.id ?? null)
 const selectedWorkOrder = computed(() => store.workOrderById(selectedWorkOrderId.value))
 
 const laborFocusId = ref(null)

@@ -1,43 +1,79 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { Network, MapPin, Boxes, CircleCheck, AlertTriangle, OctagonAlert } from 'lucide-vue-next'
-import { assets, rootAssets } from '../data/assets'
+import { CURRENT_TECHNICIAN_ID, CURRENT_TEAM } from '../data/workOrders'
+import { useWorkOrdersStore } from '../stores/workOrders'
+import { assets, rootAssets, connectedAssetSet } from '../data/assets'
 import AssetTree from '../components/assets/AssetTree.vue'
 import AssetDetailPanel from '../components/assets/AssetDetailPanel.vue'
 import LocationRegistry from '../components/assets/LocationRegistry.vue'
+import { usePermissions } from '../composables/usePermissions'
+
+const woStore = useWorkOrdersStore()
+const { accessLevel } = usePermissions();
+
+// 'full' sees every asset. 'scoped' (supervisor) is restricted to assets
+// tied to their team's work orders; 'view' (technician) to their own —
+// same full/scoped/view distinction StoreProcurementPage uses for stock
+// scope. Null means unrestricted.
+const assetsLevel = computed(() => accessLevel('assets'))
+const scopedAssetIds = computed(() => {
+  if (assetsLevel.value === 'full') return null
+  const relevantWorkOrders =
+    assetsLevel.value === 'scoped'
+      ? woStore.workOrders.filter((wo) => wo.team === CURRENT_TEAM)
+      : woStore.workOrders.filter((wo) => wo.technicianId === CURRENT_TECHNICIAN_ID)
+  return connectedAssetSet(relevantWorkOrders.map((wo) => wo.assetId).filter(Boolean))
+})
+const scopedAssets = computed(() => (scopedAssetIds.value ? assets.filter((asset) => scopedAssetIds.value.has(asset.id)) : assets))
 
 const viewMode = ref('hierarchy') // 'hierarchy' | 'locations'
-const selectedAssetId = ref(rootAssets()[0]?.id ?? null)
+const initialRoots = scopedAssetIds.value ? rootAssets().filter((asset) => scopedAssetIds.value.has(asset.id)) : rootAssets()
+const selectedAssetId = ref(initialRoots[0]?.id ?? scopedAssets.value[0]?.id ?? null)
 
 const selectedAsset = computed(() => assets.find((asset) => asset.id === selectedAssetId.value) ?? null)
 
+const subtitle = computed(() => {
+  if (assetsLevel.value === 'scoped') return `Asset hierarchy and location registry for ${CURRENT_TEAM}.`
+  if (assetsLevel.value === 'view') return 'Assets tied to your assigned work orders.'
+  return 'Asset hierarchy, location registry, and live health telemetry across every site.'
+})
 const stats = computed(() => [
-  { label: 'Total Assets', value: assets.length, icon: Boxes, accent: 'border-l-gray-400' },
+  { label: 'Total Assets', value: scopedAssets.value.length, icon: Boxes, accent: 'border-l-gray-400' },
   {
     label: 'Operational',
-    value: assets.filter((a) => a.status === 'operational').length,
+    value: scopedAssets.value.filter((a) => a.status === 'operational').length,
     icon: CircleCheck,
     accent: 'border-l-green-500',
   },
   {
     label: 'Needs Attention',
-    value: assets.filter((a) => a.status === 'under_maintenance' || a.status === 'fault').length,
+    value: scopedAssets.value.filter((a) => a.status === 'under_maintenance' || a.status === 'fault').length,
     icon: AlertTriangle,
     accent: 'border-l-amber-500',
   },
   {
     label: 'Critical Alerts',
-    value: assets.filter((a) => a.health.status === 'critical').length,
+    value: scopedAssets.value.filter((a) => a.health.status === 'critical').length,
     icon: OctagonAlert,
     accent: 'border-l-red-500',
   },
 ])
 
+// Location Registry (below) lists assets by physical site regardless of
+// scope, so a scoped user's only route to an out-of-scope asset is through
+// it — guard here rather than teaching that component about asset scope too.
+function inScope(id) {
+  return !scopedAssetIds.value || scopedAssetIds.value.has(id)
+}
+
 function selectAsset(id) {
+  if (!inScope(id)) return
   selectedAssetId.value = id
 }
 
 function handleSelectFromLocation(id) {
+  if (!inScope(id)) return
   selectedAssetId.value = id
   viewMode.value = 'hierarchy'
 }
@@ -49,7 +85,7 @@ function handleSelectFromLocation(id) {
       <div>
         <h2 class="text-lg font-semibold text-gray-900">Assets & Locations</h2>
         <p class="mt-1 text-sm text-gray-500">
-          Asset hierarchy, location registry, and live health telemetry across every site.
+          {{ subtitle }}
         </p>
       </div>
 
@@ -92,10 +128,10 @@ function handleSelectFromLocation(id) {
 
     <div v-show="viewMode === 'hierarchy'" class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
       <div class="lg:col-span-1">
-        <AssetTree :selected-id="selectedAssetId" @select="selectAsset" />
+        <AssetTree :selected-id="selectedAssetId" :scoped-ids="scopedAssetIds" @select="selectAsset" />
       </div>
       <div class="lg:col-span-2">
-        <AssetDetailPanel :asset="selectedAsset" @select-asset="selectAsset" />
+        <AssetDetailPanel :asset="selectedAsset" :scoped-ids="scopedAssetIds" @select-asset="selectAsset" />
       </div>
     </div>
 

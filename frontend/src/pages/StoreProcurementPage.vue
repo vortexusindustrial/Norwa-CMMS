@@ -74,9 +74,12 @@ watch(visibleTabs, (tabs) => {
     activeTab.value = tabs[0]?.id ?? null;
 });
 
-// 'full' sees the whole catalog; 'scoped' (supervisor) narrows to parts
-// touched by their team's work orders; 'view' (technician) narrows further
-// to just their own
+const pageSubtitle = computed(() =>
+  accessLevel("procurement") === "scoped"
+    ? `Stock checks and component reservations for ${CURRENT_TEAM}.`
+    : "Stock checks, component reservations, and purchase requests.",
+);
+
 const stockAccessLevel = computed(() => accessLevel("procurement.stockCheck"));
 const stockScopeLabel = computed(() => {
   if (stockAccessLevel.value === "scoped") return `${CURRENT_TEAM}'s jobs`;
@@ -122,7 +125,7 @@ const poEditable = computed(
           Store &amp; Procurement
         </h2>
         <p class="mt-1 text-sm text-gray-500">
-          Stock checks, component reservations, and purchase requests.
+          {{ pageSubtitle }}
         </p>
       </div>
 

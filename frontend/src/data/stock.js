@@ -55,3 +55,29 @@ export function costInfoFor(item) {
 export function totalCostFor(bom) {
   return bom.items.reduce((sum, item) => sum + item.qtyRequired * costInfoFor(item).unitCost, 0)
 }
+
+// 'ok' | 'low' | 'out' | 'untracked' — drives the badge in
+// MaterialAvailabilityPanel. Untracked covers specialty/non-stock parts
+// (e.g. INSUL-FOAM-25) that never got a catalog entry.
+export function stockStatusFor(partNumber) {
+  const stock = stockFor(partNumber)
+  if (!stock) return 'untracked'
+  if (stock.onHand <= 0) return 'out'
+  if (stock.onHand <= stock.reorderPoint) return 'low'
+  return 'ok'
+}
+
+// Deep-link to ERPNext's Material Request form, pre-filled with the part and
+// project so a technician can request stock without the CMMS building its
+// own procurement UI. Query-param prefill only reaches simple fields — the
+// item/qty line itself needs a small client script on the ERPNext side to
+// read these and push a row into the child table.
+export function erpnextMaterialRequestUrl({ partNumber, qtyNeeded = 1, projectId, workOrderId }) {
+  const params = new URLSearchParams({
+    item_code: partNumber,
+    qty: String(qtyNeeded),
+    ...(projectId ? { project: projectId } : {}),
+    ...(workOrderId ? { cmms_work_order: workOrderId } : {}),
+  })
+  return `/app/material-request/new?${params.toString()}`
+}

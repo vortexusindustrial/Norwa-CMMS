@@ -1,13 +1,14 @@
 <script setup>
-import { computed } from 'vue'
-import { Play, Square, ShieldCheck, ShieldAlert } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import { Play, Square, Plus, X } from 'lucide-vue-next'
 import { projects } from '../../data/projects'
 import { assetById } from '../../data/assets'
 import { WORK_ORDER_STATUS_META, PRIORITY_META, technicianById, elapsedMinutes, siteFor } from '../../data/workOrders'
 import { usePermissions } from '../../composables/usePermissions'
-import { useAuthStore } from '../../stores/auth'
 import { useWorkOrdersStore } from '../../stores/workOrders'
 import MaterialLoggingSection from './MaterialLoggingSection.vue'
+import MaterialAvailabilityPanel from './MaterialAvailabilityPanel.vue'
+import LotoPanel from './LotoPanel.vue'
 
 const props = defineProps({
   workOrder: { type: Object, default: null },
@@ -15,11 +16,11 @@ const props = defineProps({
 
 const emit = defineEmits(['open-labor-log'])
 
-const auth = useAuthStore()
 const store = useWorkOrdersStore()
 const { accessLevel } = usePermissions()
 
 const materialLoggingEditable = computed(() => accessLevel('workOrders.materialLogging') === 'full')
+const showMaterialAvailability = computed(() => accessLevel('workOrders.materialAvailability') !== 'none')
 
 const statusMeta = computed(() => (props.workOrder ? WORK_ORDER_STATUS_META[props.workOrder.status] : null))
 const priorityMeta = computed(() => (props.workOrder ? PRIORITY_META[props.workOrder.priority] : null))
@@ -56,6 +57,16 @@ function toggleTimer() {
 function resetTimer() {
   if (!props.workOrder) return
   store.resetTimer(props.workOrder.id)
+}
+
+const showAddChecklistItem = ref(false)
+const newChecklistLabel = ref('')
+
+function submitChecklistItem() {
+  if (!props.workOrder || !newChecklistLabel.value.trim()) return
+  store.addChecklistItem(props.workOrder.id, newChecklistLabel.value)
+  newChecklistLabel.value = ''
+  showAddChecklistItem.value = false
 }
 </script>
 
@@ -128,35 +139,25 @@ function resetTimer() {
       </div>
 
       <!-- LOTO -->
-      <div v-if="workOrder.loto.required" class="mt-3 flex items-center justify-between rounded-md border p-3" :class="workOrder.loto.status === 'signed_off' ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'">
-        <div class="flex items-center gap-2">
-          <ShieldCheck v-if="workOrder.loto.status === 'signed_off'" class="h-4 w-4 text-green-600" />
-          <ShieldAlert v-else class="h-4 w-4 text-amber-600" />
-          <div>
-            <p class="text-sm font-medium text-gray-900">Lockout/Tagout</p>
-            <p class="text-xs text-gray-500">
-              <template v-if="workOrder.loto.status === 'signed_off'">
-                Signed off by {{ workOrder.loto.signedOffBy }} on {{ formatDate(workOrder.loto.signedOffAt) }}
-              </template>
-              <template v-else>Required before work can proceed — not yet signed off.</template>
-            </p>
-          </div>
+      <div class="mt-3">
+        <LotoPanel v-if="workOrder.loto.required" :key="workOrder.id" :work-order="workOrder" :equipment-name="asset?.name" />
+        <div v-else class="flex items-center justify-between gap-3 rounded-md border border-dashed border-gray-200 p-3">
+          <p class="text-sm text-gray-500">LOTO not marked as required for this job.</p>
+          <button
+            type="button"
+            class="shrink-0 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+            @click="store.setLotoRequired(workOrder.id, true)"
+          >
+            Mark LOTO Required
+          </button>
         </div>
-        <button
-          v-if="workOrder.loto.status !== 'signed_off'"
-          type="button"
-          class="shrink-0 rounded-md bg-gray-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800"
-          @click="store.signOffLoto(workOrder.id, auth.user?.name ?? 'Unknown')"
-        >
-          Sign Off
-        </button>
       </div>
 
       <!-- Checklist -->
       <div class="mt-5">
         <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Checklist</p>
         <ul class="mt-2 flex flex-col gap-1.5">
-          <li v-for="item in workOrder.checklist" :key="item.id" class="flex items-center gap-2">
+          <li v-for="item in workOrder.checklist" :key="item.id" class="group flex items-center gap-2">
             <input
               :id="item.id"
               type="checkbox"
@@ -164,11 +165,52 @@ function resetTimer() {
               class="h-4 w-4 rounded border-gray-300"
               @change="store.toggleChecklistItem(workOrder.id, item.id)"
             />
-            <label :for="item.id" class="text-sm" :class="item.done ? 'text-gray-400 line-through' : 'text-gray-900'">
+            <label :for="item.id" class="flex-1 text-sm" :class="item.done ? 'text-gray-400 line-through' : 'text-gray-900'">
               {{ item.label }}
             </label>
+            <button
+              type="button"
+              class="shrink-0 rounded p-0.5 text-red-600 opacity-0 hover:bg-red-100 hover:text-red-600 group-hover:opacity-100"
+              title="Remove item"
+              @click="store.removeChecklistItem(workOrder.id, item.id)"
+            >
+              <X class="h-3.5 w-3.5" />
+            </button>
           </li>
+          <li v-if="!workOrder.checklist.length" class="text-sm text-gray-500">No checklist items yet.</li>
         </ul>
+
+        <div class="mt-2">
+          <button
+            v-if="!showAddChecklistItem"
+            type="button"
+            class="flex items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+            @click="showAddChecklistItem = true"
+          >
+            <Plus class="h-3.5 w-3.5" />
+            Add Item
+          </button>
+          <div v-else class="flex gap-2">
+            <input
+              v-model="newChecklistLabel"
+              type="text"
+              placeholder="Checklist item"
+              class="flex-1 rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-gray-500 focus:outline-none"
+              @keyup.enter="submitChecklistItem"
+              @keyup.esc="showAddChecklistItem = false"
+            />
+            <button type="button" class="shrink-0 rounded-md bg-gray-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800" @click="submitChecklistItem">Add</button>
+            <button type="button" class="shrink-0 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50" @click="showAddChecklistItem = false">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Materials & stock -->
+      <div v-if="showMaterialAvailability" class="mt-5">
+        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Materials &amp; Stock</p>
+        <div class="mt-2">
+          <MaterialAvailabilityPanel :materials="workOrder.materials" :project-id="workOrder.projectId" :work-order-id="workOrder.id" />
+        </div>
       </div>
 
       <!-- Materials -->

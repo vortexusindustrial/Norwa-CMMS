@@ -1,111 +1,113 @@
 <script setup>
-import { ref, watch, onBeforeUnmount, markRaw } from 'vue'
-import { MapPin } from 'lucide-vue-next'
-import { loadGoogleMapsLibrary, googleMapsApiKeyConfigured } from '../../utils/googleMaps'
+import { ref, watch, onBeforeUnmount, markRaw } from "vue";
+import { MapPin } from "lucide-vue-next";
+import {
+  loadGoogleMapsLibrary,
+  googleMapsApiKeyConfigured,
+} from "../../utils/googleMaps";
 
 const props = defineProps({
-  modelValue: { type: String, default: '' },
-  placeholder: { type: String, default: 'Search for a location...' },
-})
+  modelValue: { type: String, default: "" },
+  placeholder: { type: String, default: "Search for a location..." },
+});
 
 // 'update:modelValue' fires on every keystroke, for plain v-model text
 // binding. 'select' only fires once the user picks a suggestion, carrying
 // the geocoded place — that's the payload worth persisting.
-const emit = defineEmits(['update:modelValue', 'select'])
+const emit = defineEmits(["update:modelValue", "select"]);
 
-const query = ref(props.modelValue)
+const query = ref(props.modelValue);
 watch(
   () => props.modelValue,
   (value) => {
-    if (value !== query.value) query.value = value
-  }
-)
+    if (value !== query.value) query.value = value;
+  },
+);
 
-const suggestions = ref([])
-const showSuggestions = ref(false)
-const loading = ref(false)
+const suggestions = ref([]);
+const showSuggestions = ref(false);
+const loading = ref(false);
 
-let AutocompleteSuggestionCtor = null
-let AutocompleteSessionTokenCtor = null
-let placesLibraryReady = false
-let sessionToken = null
-let debounceTimer = null
+let AutocompleteSuggestionCtor = null;
+let AutocompleteSessionTokenCtor = null;
+let placesLibraryReady = false;
+let sessionToken = null;
+let debounceTimer = null;
 
 async function ensurePlacesLibrary() {
-  if (placesLibraryReady) return true
-  if (!googleMapsApiKeyConfigured) return false
-  const places = await loadGoogleMapsLibrary('places')
-  AutocompleteSuggestionCtor = places.AutocompleteSuggestion
-  AutocompleteSessionTokenCtor = places.AutocompleteSessionToken
-  placesLibraryReady = true
-  return true
+  if (placesLibraryReady) return true;
+  if (!googleMapsApiKeyConfigured) return false;
+  const places = await loadGoogleMapsLibrary("places");
+  AutocompleteSuggestionCtor = places.AutocompleteSuggestion;
+  AutocompleteSessionTokenCtor = places.AutocompleteSessionToken;
+  placesLibraryReady = true;
+  return true;
 }
 
 async function fetchSuggestions(input) {
   if (!input.trim()) {
-    suggestions.value = []
-    return
+    suggestions.value = [];
+    return;
   }
-  const ready = await ensurePlacesLibrary()
-  if (!ready) return
-  if (!sessionToken) sessionToken = new AutocompleteSessionTokenCtor()
+  const ready = await ensurePlacesLibrary();
+  if (!ready) return;
+  if (!sessionToken) sessionToken = new AutocompleteSessionTokenCtor();
 
-  loading.value = true
+  loading.value = true;
   try {
-    const { suggestions: results } = await AutocompleteSuggestionCtor.fetchAutocompleteSuggestions({
-      input,
-      sessionToken,
-      includedRegionCodes: ['ke'],
-    })
-    // markRaw: these are Google SDK class instances backed by private fields.
-    // Letting Vue wrap them in a reactive Proxy breaks their getters — this.#field
-    // lookups fail when `this` is the Proxy instead of the real instance.
-    suggestions.value = results.filter((s) => s?.placePrediction?.placeId).map((s) => markRaw(s))
+    const { suggestions: results } =
+      await AutocompleteSuggestionCtor.fetchAutocompleteSuggestions({
+        input,
+        sessionToken,
+        includedRegionCodes: ["ke"],
+      });
+    suggestions.value = results
+      .filter((s) => s?.placePrediction?.placeId)
+      .map((s) => markRaw(s));
   } catch (err) {
-    console.error('Location autocomplete failed:', err)
-    suggestions.value = []
+    console.error("Location autocomplete failed:", err);
+    suggestions.value = [];
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 function onInput(event) {
-  const value = event.target.value
-  query.value = value
-  emit('update:modelValue', value)
-  showSuggestions.value = true
-  clearTimeout(debounceTimer)
-  debounceTimer = setTimeout(() => fetchSuggestions(value), 300)
+  const value = event.target.value;
+  query.value = value;
+  emit("update:modelValue", value);
+  showSuggestions.value = true;
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => fetchSuggestions(value), 300);
 }
 
 async function selectSuggestion(suggestion) {
-  const prediction = suggestion.placePrediction
-  const place = prediction.toPlace()
-  await place.fetchFields({ fields: ['formattedAddress', 'location'] })
+  const prediction = suggestion.placePrediction;
+  const place = prediction.toPlace();
+  await place.fetchFields({ fields: ["formattedAddress", "location"] });
 
-  const address = place.formattedAddress ?? prediction.text.text
-  query.value = address
-  emit('update:modelValue', address)
-  emit('select', {
+  const address = place.formattedAddress ?? prediction.text.text;
+  query.value = address;
+  emit("update:modelValue", address);
+  emit("select", {
     address,
     placeId: place.id,
     lat: place.location?.lat() ?? null,
     lng: place.location?.lng() ?? null,
-  })
+  });
 
-  suggestions.value = []
-  showSuggestions.value = false
-  sessionToken = null // spent on this place lookup — next search starts a fresh billing session
+  suggestions.value = [];
+  showSuggestions.value = false;
+  sessionToken = null;
 }
 
 function onBlur() {
-  // Delay so a mousedown on a suggestion registers before the list unmounts.
   setTimeout(() => {
-    showSuggestions.value = false
-  }, 150)
+    showSuggestions.value = false;
+  }, 150);
 }
 
-onBeforeUnmount(() => clearTimeout(debounceTimer))
+onBeforeUnmount(() => clearTimeout(debounceTimer));
 </script>
 
 <template>
@@ -119,14 +121,19 @@ onBeforeUnmount(() => clearTimeout(debounceTimer))
       @focus="showSuggestions = true"
       @blur="onBlur"
     />
-    <p v-if="!googleMapsApiKeyConfigured" class="mt-1 text-[11px] text-gray-400">
+    <p
+      v-if="!googleMapsApiKeyConfigured"
+      class="mt-1 text-[11px] text-gray-400"
+    >
       Add VITE_GOOGLE_MAPS_API_KEY to enable location suggestions.
     </p>
     <ul
       v-else-if="showSuggestions && (suggestions.length || loading)"
       class="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border border-gray-200 bg-white py-1 shadow-sm"
     >
-      <li v-if="loading" class="px-3 py-2 text-xs text-gray-400">Searching...</li>
+      <li v-if="loading" class="px-3 py-2 text-xs text-gray-400">
+        Searching...
+      </li>
       <li
         v-for="suggestion in suggestions"
         :key="suggestion.placePrediction.placeId"

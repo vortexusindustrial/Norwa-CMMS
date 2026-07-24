@@ -15,8 +15,6 @@ const { accessLevel } = usePermissions()
 
 const laborLevel = computed(() => accessLevel('workOrders.laborLog')) // 'full' | 'scoped'
 const scoped = computed(() => laborLevel.value === 'scoped')
-// 'full' access covers the whole ledger, so it also covers correcting or
-// removing an entry someone else logged — 'scoped' technicians can only add.
 const editable = computed(() => laborLevel.value === 'full')
 
 const editingId = ref(null)

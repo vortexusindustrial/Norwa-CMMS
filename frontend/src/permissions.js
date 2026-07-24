@@ -5,9 +5,6 @@ export const ROLES = {
   TECHNICIAN: 'Field Technician',
 }
 
-// 'full' | 'scoped' | 'view' | 'none'. Nav-item granularity for now —
-// finer-grained checks (per button, per column) can key into the same
-// sections as those pages get built out.
 export const SECTION_ACCESS = {
   dashboard: {
     [ROLES.ADMIN]: 'full',
@@ -18,7 +15,26 @@ export const SECTION_ACCESS = {
   projects: {
     [ROLES.ADMIN]: 'full',
     [ROLES.MANAGER]: 'full',
-    [ROLES.SUPERVISOR]: 'none',
+    [ROLES.SUPERVISOR]: 'view',
+    [ROLES.TECHNICIAN]: 'scoped',
+  },
+
+  'projects.list': {
+    [ROLES.ADMIN]: 'full',
+    [ROLES.MANAGER]: 'full',
+    [ROLES.SUPERVISOR]: 'view',
+    [ROLES.TECHNICIAN]: 'scoped', 
+  },
+  'projects.detail': {
+    [ROLES.ADMIN]: 'full',
+    [ROLES.MANAGER]: 'full',
+    [ROLES.SUPERVISOR]: 'view',
+    [ROLES.TECHNICIAN]: 'scoped',
+  },
+  'projects.assignment': {
+    [ROLES.ADMIN]: 'full',
+    [ROLES.MANAGER]: 'full',
+    [ROLES.SUPERVISOR]: 'full', 
     [ROLES.TECHNICIAN]: 'none',
   },
   bom: {
@@ -31,8 +47,22 @@ export const SECTION_ACCESS = {
     [ROLES.ADMIN]: 'full',
     [ROLES.MANAGER]: 'full',
     [ROLES.SUPERVISOR]: 'scoped',
-    [ROLES.TECHNICIAN]: 'none',
+    [ROLES.TECHNICIAN]: 'view',
   },
+
+  'assets.detail': {
+    [ROLES.ADMIN]: 'full',
+    [ROLES.MANAGER]: 'full',
+    [ROLES.SUPERVISOR]: 'scoped', 
+    [ROLES.TECHNICIAN]: 'view', 
+  },
+  'assets.health': {
+    [ROLES.ADMIN]: 'full',
+    [ROLES.MANAGER]: 'full',
+    [ROLES.SUPERVISOR]: 'scoped', 
+    [ROLES.TECHNICIAN]: 'view',
+  },
+
   workOrders: {
     [ROLES.ADMIN]: 'full',
     [ROLES.MANAGER]: 'full',
@@ -43,24 +73,24 @@ export const SECTION_ACCESS = {
   'workOrders.queue': {
     [ROLES.ADMIN]: 'full',
     [ROLES.MANAGER]: 'full',
-    [ROLES.SUPERVISOR]: 'scoped', // their team/shift only
+    [ROLES.SUPERVISOR]: 'scoped', 
     [ROLES.TECHNICIAN]: 'none',
   },
   'workOrders.myAssigned': {
     [ROLES.ADMIN]: 'view',
     [ROLES.MANAGER]: 'view',
     [ROLES.SUPERVISOR]: 'view',
-    [ROLES.TECHNICIAN]: 'full', // technician's home screen
+    [ROLES.TECHNICIAN]: 'full', 
   },
   'workOrders.detail': {
     [ROLES.ADMIN]: 'full',
     [ROLES.MANAGER]: 'full',
     [ROLES.SUPERVISOR]: 'full',
-    [ROLES.TECHNICIAN]: 'scoped', // their own orders only
+    [ROLES.TECHNICIAN]: 'scoped', 
   },
   'workOrders.assignmentBoard': {
     [ROLES.ADMIN]: 'full',
-    [ROLES.MANAGER]: 'scoped', // view + override
+    [ROLES.MANAGER]: 'scoped', 
     [ROLES.SUPERVISOR]: 'full',
     [ROLES.TECHNICIAN]: 'none',
   },
@@ -74,7 +104,14 @@ export const SECTION_ACCESS = {
     [ROLES.ADMIN]: 'full',
     [ROLES.MANAGER]: 'full',
     [ROLES.SUPERVISOR]: 'full',
-    [ROLES.TECHNICIAN]: 'scoped', // own hours only
+    [ROLES.TECHNICIAN]: 'scoped', 
+  },
+  
+  'workOrders.materialAvailability': {
+    [ROLES.ADMIN]: 'full',
+    [ROLES.MANAGER]: 'full',
+    [ROLES.SUPERVISOR]: 'full',
+    [ROLES.TECHNICIAN]: 'scoped', 
   },
   procurement: {
     [ROLES.ADMIN]: 'full',
@@ -86,8 +123,8 @@ export const SECTION_ACCESS = {
   'procurement.stockCheck': {
     [ROLES.ADMIN]: 'full',
     [ROLES.MANAGER]: 'full',
-    [ROLES.SUPERVISOR]: 'scoped', // parts needed for their shift's jobs
-    [ROLES.TECHNICIAN]: 'view',
+    [ROLES.SUPERVISOR]: 'scoped', 
+    [ROLES.TECHNICIAN]: 'none',
   },
   'procurement.purchaseRequestQueue': {
     [ROLES.ADMIN]: 'full',
@@ -99,11 +136,11 @@ export const SECTION_ACCESS = {
     [ROLES.ADMIN]: 'full',
     [ROLES.MANAGER]: 'full',
     [ROLES.SUPERVISOR]: 'view',
-    [ROLES.TECHNICIAN]: 'view',
+    [ROLES.TECHNICIAN]: 'none',
   },
   'procurement.vendorPoStatus': {
     [ROLES.ADMIN]: 'full',
-    [ROLES.MANAGER]: 'scoped', // trigger + track status, not vendor record management
+    [ROLES.MANAGER]: 'scoped', 
     [ROLES.SUPERVISOR]: 'none',
     [ROLES.TECHNICIAN]: 'none',
   },
@@ -130,7 +167,7 @@ export const SECTION_ACCESS = {
   'reports.mttr': {
     [ROLES.ADMIN]: 'full',
     [ROLES.MANAGER]: 'full',
-    [ROLES.SUPERVISOR]: 'scoped', // their team only
+    [ROLES.SUPERVISOR]: 'scoped', 
     [ROLES.TECHNICIAN]: 'none',
   },
   'reports.approvalQueue': {
@@ -145,10 +182,7 @@ export const SECTION_ACCESS = {
     [ROLES.SUPERVISOR]: 'none',
     [ROLES.TECHNICIAN]: 'none',
   },
-  // Sub-feature grants within the Administration page. All admin-only —
-  // no other role reaches this page at all (see 'administration' above) —
-  // except auditLog, which is capped at 'view' for every role including
-  // Admin: deletion is blocked in the UI regardless of who's looking.
+  
   'administration.userManagement': {
     [ROLES.ADMIN]: 'full',
     [ROLES.MANAGER]: 'none',
@@ -168,7 +202,7 @@ export const SECTION_ACCESS = {
     [ROLES.TECHNICIAN]: 'none',
   },
   'administration.auditLog': {
-    [ROLES.ADMIN]: 'view', // deletion blocked even for Admin
+    [ROLES.ADMIN]: 'view', 
     [ROLES.MANAGER]: 'none',
     [ROLES.SUPERVISOR]: 'none',
     [ROLES.TECHNICIAN]: 'none',

@@ -3,14 +3,15 @@ import { ref, computed } from 'vue'
 import { purchaseRequests as mockPurchaseRequests, reservations as mockReservations, purchaseOrders as mockPurchaseOrders } from '../data/procurement'
 import { stockCatalog, lowStockParts } from '../data/stock'
 
+// persist: true (see stores/persistPlugin.js) keeps requests, reservations,
+// and purchase orders across a reload.
 export const useProcurementStore = defineStore('procurement', () => {
   const purchaseRequests = ref(mockPurchaseRequests)
   const reservations = ref(mockReservations)
   const purchaseOrders = ref(mockPurchaseOrders)
 
   // Auto-generate a pending request for any low-stock part that doesn't
-  // already have an open one (pending/approved/ordered) — mirrors what a
-  // real reorder-point trigger would do on stock level changes.
+  // already have an open one (pending/approved/ordered)
   function syncLowStockRequests() {
     for (const part of lowStockParts()) {
       const hasOpenRequest = purchaseRequests.value.some(
@@ -145,4 +146,4 @@ export const useProcurementStore = defineStore('procurement', () => {
     releaseReservation,
     consumeReservation,
   }
-})
+}, { persist: true })

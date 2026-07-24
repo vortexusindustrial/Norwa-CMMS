@@ -23,12 +23,12 @@ export const PRIORITY_META = {
 // the "their team/shift" queue scoping. hourlyRate feeds the TCO dashboard's
 // labor cost rollup (see ReportsPage.vue).
 export const TECHNICIANS = [
-  { id: 'TECH-001', name: 'Samuel Kiptoo', team: 'Team A - Day Shift', hourlyRate: 1200 },
-  { id: 'TECH-002', name: 'Elijah Mutuku', team: 'Team A - Day Shift', hourlyRate: 1100 },
-  { id: 'TECH-003', name: 'Faith Chebet', team: 'Team A - Day Shift', hourlyRate: 1250 },
-  { id: 'TECH-004', name: 'Dennis Otieno', team: 'Team B - Night Shift', hourlyRate: 1150 },
-  { id: 'TECH-005', name: 'Collins Barasa', team: 'Team B - Night Shift', hourlyRate: 1300 },
-  { id: 'TECH-006', name: 'Winnie Adhiambo', team: 'Team B - Night Shift', hourlyRate: 1200 },
+  { id: 'TECH-001', name: 'Samuel Kiptoo', team: 'Team A - Day Shift', hourlyRate: 1200, phone: '+254 733 210 456' },
+  { id: 'TECH-002', name: 'Elijah Mutuku', team: 'Team A - Day Shift', hourlyRate: 1100, phone: '+254 701 884 220' },
+  { id: 'TECH-003', name: 'Faith Chebet', team: 'Team A - Day Shift', hourlyRate: 1250, phone: '+254 712 903 771' },
+  { id: 'TECH-004', name: 'Dennis Otieno', team: 'Team B - Night Shift', hourlyRate: 1150, phone: '+254 720 556 812' },
+  { id: 'TECH-005', name: 'Collins Barasa', team: 'Team B - Night Shift', hourlyRate: 1300, phone: '+254 733 447 190' },
+  { id: 'TECH-006', name: 'Winnie Adhiambo', team: 'Team B - Night Shift', hourlyRate: 1200, phone: '+254 700 928 315' },
 ]
 
 // There's no real technician directory behind login yet — mockLogin (see
@@ -54,6 +54,15 @@ function checklist(...labels) {
   }))
 }
 
+let nextLotoPointId = 1
+function lotoPoints(...entries) {
+  return entries.map(({ label, lockNumber = null }) => ({
+    id: `LP-${String(nextLotoPointId++).padStart(3, '0')}`,
+    label,
+    lockNumber,
+  }))
+}
+
 export const workOrders = [
   {
     id: 'WO-2026-101',
@@ -73,8 +82,20 @@ export const workOrders = [
       { label: 'Record vibration reading with handheld meter', done: false },
       { label: 'Compare against baseline and log result', done: false }
     ),
-    loto: { required: true, status: 'signed_off', signedOffBy: 'Samuel Kiptoo', signedOffAt: '2026-07-17T07:15:00+03:00' },
-    timer: { status: 'running', totalMinutes: 45, startedAt: '2026-07-17T07:20:00+03:00' },
+    loto: {
+      required: true,
+      status: 'signed_off',
+      permitNumber: 'LOTO-2026-101',
+      isolatedAt: '2026-07-17T07:15:00+03:00',
+      points: lotoPoints({ label: 'Pump motor isolator MI-1A locked out', lockNumber: 'LK-2201' }),
+      signedOffBy: 'Samuel Kiptoo',
+      signedOffAt: '2026-07-17T07:15:00+03:00',
+    },
+    // Stopped rather than 'running' with a fixed startedAt: elapsedMinutes()
+    // computes now() - startedAt, so a hardcoded past timestamp would make
+    // the seed's "live" timer balloon by however long it's been since this
+    // file was authored. The technician resumes it with Start.
+    timer: { status: 'stopped', totalMinutes: 45, startedAt: null },
     materials: [{ partNumber: 'INSUL-FOAM-25', description: 'Closed-cell foam pipe insulation, 25mm', qtyUsed: 3, uom: 'Meter' }],
   },
   {
@@ -90,7 +111,7 @@ export const workOrders = [
     createdDate: '2026-07-16',
     scheduledDate: '2026-07-17',
     checklist: checklist('Confirm chamber temp is holding on backup', 'Isolate and apply LOTO', 'Leak-test refrigerant circuit', 'Re-gas and restart compressor'),
-    loto: { required: true, status: 'pending', signedOffBy: null, signedOffAt: null },
+    loto: { required: true, status: 'pending', permitNumber: null, isolatedAt: null, points: [], signedOffBy: null, signedOffAt: null },
     timer: { status: 'stopped', totalMinutes: 0, startedAt: null },
     materials: [],
   },
@@ -111,7 +132,7 @@ export const workOrders = [
       { label: 'Inspect coolant and belts', done: true },
       { label: 'Run load-bank test', done: true }
     ),
-    loto: { required: false, status: 'not_required', signedOffBy: null, signedOffAt: null },
+    loto: { required: false, status: 'not_required', permitNumber: null, isolatedAt: null, points: [], signedOffBy: null, signedOffAt: null },
     timer: { status: 'stopped', totalMinutes: 150, startedAt: null },
     materials: [{ partNumber: 'GEN-OIL-15W40', description: 'Diesel engine oil, 15W-40', qtyUsed: 20, uom: 'Litre' }],
   },
@@ -128,7 +149,15 @@ export const workOrders = [
     createdDate: '2026-07-15',
     scheduledDate: '2026-07-18',
     checklist: checklist({ label: 'Take car out of service', done: true }, 'Replace door operator belt', 'Re-test full door cycle'),
-    loto: { required: true, status: 'signed_off', signedOffBy: 'Winnie Adhiambo', signedOffAt: '2026-07-15T16:00:00+03:00' },
+    loto: {
+      required: true,
+      status: 'signed_off',
+      permitNumber: 'LOTO-2026-104',
+      isolatedAt: '2026-07-15T16:00:00+03:00',
+      points: lotoPoints({ label: 'Car 2 main disconnect locked', lockNumber: 'LK-4402' }),
+      signedOffBy: 'Winnie Adhiambo',
+      signedOffAt: '2026-07-15T16:00:00+03:00',
+    },
     timer: { status: 'stopped', totalMinutes: 30, startedAt: null },
     materials: [],
   },
@@ -145,7 +174,7 @@ export const workOrders = [
     createdDate: '2026-07-16',
     scheduledDate: null,
     checklist: checklist('Check BACnet network cabling', 'Verify controller firmware version'),
-    loto: { required: false, status: 'not_required', signedOffBy: null, signedOffAt: null },
+    loto: { required: false, status: 'not_required', permitNumber: null, isolatedAt: null, points: [], signedOffBy: null, signedOffAt: null },
     timer: { status: 'stopped', totalMinutes: 0, startedAt: null },
     materials: [],
   },
@@ -162,7 +191,7 @@ export const workOrders = [
     createdDate: '2026-07-14',
     scheduledDate: '2026-07-19',
     checklist: checklist('Test emergency brake', 'Test alarm and intercom', 'Log ride count and motor temp trend'),
-    loto: { required: false, status: 'not_required', signedOffBy: null, signedOffAt: null },
+    loto: { required: false, status: 'not_required', permitNumber: null, isolatedAt: null, points: [], signedOffBy: null, signedOffAt: null },
     timer: { status: 'stopped', totalMinutes: 0, startedAt: null },
     materials: [],
   },
@@ -179,7 +208,7 @@ export const workOrders = [
     createdDate: '2026-07-16',
     scheduledDate: '2026-07-18',
     checklist: checklist('Inspect refrigerant pressure trend', 'Clean condenser coil', 'Verify compressor amp draw'),
-    loto: { required: true, status: 'pending', signedOffBy: null, signedOffAt: null },
+    loto: { required: true, status: 'pending', permitNumber: null, isolatedAt: null, points: [], signedOffBy: null, signedOffAt: null },
     timer: { status: 'stopped', totalMinutes: 0, startedAt: null },
     materials: [],
   },
@@ -196,7 +225,7 @@ export const workOrders = [
     createdDate: '2026-06-20',
     scheduledDate: '2026-06-25',
     checklist: checklist({ label: 'Recalibrate temperature sensors', done: true }, { label: 'Verify setpoints against BMS schedule', done: true }),
-    loto: { required: false, status: 'not_required', signedOffBy: null, signedOffAt: null },
+    loto: { required: false, status: 'not_required', permitNumber: null, isolatedAt: null, points: [], signedOffBy: null, signedOffAt: null },
     timer: { status: 'stopped', totalMinutes: 95, startedAt: null },
     materials: [],
   },
@@ -216,7 +245,15 @@ export const workOrders = [
     createdDate: '2026-02-10',
     scheduledDate: '2026-02-12',
     checklist: checklist({ label: 'Isolate and recover refrigerant', done: true }, { label: 'Replace compressor', done: true }),
-    loto: { required: true, status: 'signed_off', signedOffBy: 'Collins Barasa', signedOffAt: '2026-02-12T09:00:00+03:00' },
+    loto: {
+      required: true,
+      status: 'signed_off',
+      permitNumber: 'LOTO-2026-109',
+      isolatedAt: '2026-02-12T09:00:00+03:00',
+      points: lotoPoints({ label: 'Condensing unit compressor isolator locked', lockNumber: 'LK-3301' }),
+      signedOffBy: 'Collins Barasa',
+      signedOffAt: '2026-02-12T09:00:00+03:00',
+    },
     timer: { status: 'stopped', totalMinutes: 220, startedAt: null },
     materials: [],
     closedOut: true,
@@ -234,7 +271,15 @@ export const workOrders = [
     createdDate: '2026-03-08',
     scheduledDate: '2026-03-10',
     checklist: checklist({ label: 'Take car out of service', done: true }, { label: 'Replace door operator motor', done: true }),
-    loto: { required: true, status: 'signed_off', signedOffBy: 'Dennis Otieno', signedOffAt: '2026-03-10T10:00:00+03:00' },
+    loto: {
+      required: true,
+      status: 'signed_off',
+      permitNumber: 'LOTO-2026-110',
+      isolatedAt: '2026-03-10T10:00:00+03:00',
+      points: lotoPoints({ label: 'Car 2 main disconnect locked', lockNumber: 'LK-4402' }),
+      signedOffBy: 'Dennis Otieno',
+      signedOffAt: '2026-03-10T10:00:00+03:00',
+    },
     timer: { status: 'stopped', totalMinutes: 180, startedAt: null },
     materials: [],
     closedOut: true,
@@ -252,7 +297,15 @@ export const workOrders = [
     createdDate: '2026-04-14',
     scheduledDate: '2026-04-15',
     checklist: checklist({ label: 'Isolate pump and apply LOTO', done: true }, { label: 'Replace mechanical seal', done: true }),
-    loto: { required: true, status: 'signed_off', signedOffBy: 'Elijah Mutuku', signedOffAt: '2026-04-15T08:00:00+03:00' },
+    loto: {
+      required: true,
+      status: 'signed_off',
+      permitNumber: 'LOTO-2026-111',
+      isolatedAt: '2026-04-15T08:00:00+03:00',
+      points: lotoPoints({ label: 'Pump motor isolator MI-1A locked out', lockNumber: 'LK-2201' }),
+      signedOffBy: 'Elijah Mutuku',
+      signedOffAt: '2026-04-15T08:00:00+03:00',
+    },
     timer: { status: 'stopped', totalMinutes: 90, startedAt: null },
     materials: [],
     closedOut: true,
@@ -270,7 +323,15 @@ export const workOrders = [
     createdDate: '2026-05-18',
     scheduledDate: '2026-05-19',
     checklist: checklist({ label: 'Diagnose starter circuit', done: true }, { label: 'Replace starter motor', done: true }),
-    loto: { required: true, status: 'signed_off', signedOffBy: 'Faith Chebet', signedOffAt: '2026-05-19T11:00:00+03:00' },
+    loto: {
+      required: true,
+      status: 'signed_off',
+      permitNumber: 'LOTO-2026-112',
+      isolatedAt: '2026-05-19T11:00:00+03:00',
+      points: lotoPoints({ label: 'Generator control panel isolator locked', lockNumber: 'LK-2001' }),
+      signedOffBy: 'Faith Chebet',
+      signedOffAt: '2026-05-19T11:00:00+03:00',
+    },
     timer: { status: 'stopped', totalMinutes: 130, startedAt: null },
     materials: [],
     closedOut: true,
@@ -288,7 +349,15 @@ export const workOrders = [
     createdDate: '2026-06-08',
     scheduledDate: '2026-06-09',
     checklist: checklist({ label: 'Diagnose contactor fault', done: true }, { label: 'Replace contactor', done: true }),
-    loto: { required: true, status: 'signed_off', signedOffBy: 'Winnie Adhiambo', signedOffAt: '2026-06-09T09:30:00+03:00' },
+    loto: {
+      required: true,
+      status: 'signed_off',
+      permitNumber: 'LOTO-2026-113',
+      isolatedAt: '2026-06-09T09:30:00+03:00',
+      points: lotoPoints({ label: 'Condensing unit compressor isolator locked', lockNumber: 'LK-3311' }),
+      signedOffBy: 'Winnie Adhiambo',
+      signedOffAt: '2026-06-09T09:30:00+03:00',
+    },
     timer: { status: 'stopped', totalMinutes: 100, startedAt: null },
     materials: [],
     closedOut: true,
@@ -306,7 +375,15 @@ export const workOrders = [
     createdDate: '2026-07-08',
     scheduledDate: '2026-07-09',
     checklist: checklist({ label: 'Diagnose motor cooling fan', done: true }, { label: 'Replace fan bearing', done: true }),
-    loto: { required: true, status: 'signed_off', signedOffBy: 'Samuel Kiptoo', signedOffAt: '2026-07-09T14:00:00+03:00' },
+    loto: {
+      required: true,
+      status: 'signed_off',
+      permitNumber: 'LOTO-2026-114',
+      isolatedAt: '2026-07-09T14:00:00+03:00',
+      points: lotoPoints({ label: 'Car 1 main disconnect locked', lockNumber: 'LK-4401' }),
+      signedOffBy: 'Samuel Kiptoo',
+      signedOffAt: '2026-07-09T14:00:00+03:00',
+    },
     timer: { status: 'stopped', totalMinutes: 60, startedAt: null },
     materials: [],
     closedOut: true,

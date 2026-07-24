@@ -47,7 +47,7 @@ export const projects = [
       lat: -1.2136,
       lng: 36.7893,
     },
-    technician: { name: 'Samuel Kiptoo', phone: '+254 733 210 456' },
+    technicianId: 'TECH-001',
     dates: { start: '2026-04-01', targetEnd: '2026-09-30' },
     scope:
       'Retrofit of existing HVAC plant across 3 floors of retail space, including chiller replacement, ductwork upgrade, and BMS integration for energy monitoring.',
@@ -68,7 +68,7 @@ export const projects = [
       lat: -1.15,
       lng: 36.9333,
     },
-    technician: { name: 'Elijah Mutuku', phone: '+254 701 884 220' },
+    technicianId: 'TECH-002',
     dates: { start: '2026-09-01', targetEnd: '2027-02-28' },
     scope:
       'Installation of a new 500m3/day water treatment plant serving the industrial park, including filtration, chlorination, and pump house construction.',
@@ -89,7 +89,7 @@ export const projects = [
       lat: -1.2244,
       lng: 36.8886,
     },
-    technician: { name: 'Faith Chebet', phone: '+254 712 903 771' },
+    technicianId: 'TECH-003',
     dates: { start: '2026-01-15', targetEnd: '2026-03-20' },
     scope:
       'Supply and installation of a 1000kVA standby generator with automatic transfer switch and acoustic enclosure for the mall backup power system.',
@@ -110,7 +110,7 @@ export const projects = [
       lat: -1.2864,
       lng: 36.8172,
     },
-    technician: { name: 'Dennis Otieno', phone: '+254 720 556 812' },
+    technicianId: 'TECH-004',
     dates: { start: '2026-05-10', targetEnd: '2026-11-15' },
     scope:
       'Full replacement of the fire suppression and sprinkler system across a 22-floor office tower, including riser upgrades and fire pump commissioning.',
@@ -151,7 +151,7 @@ export const projects = [
       lat: -1.3192,
       lng: 36.9278,
     },
-    technician: { name: 'Collins Barasa', phone: '+254 733 447 190' },
+    technicianId: 'TECH-005',
     dates: { start: '2026-03-01', targetEnd: '2026-08-31' },
     scope:
       'Refit of two cold storage chambers with new refrigeration units, insulated panelling, and continuous temperature monitoring for perishable cargo handling.',
@@ -172,7 +172,7 @@ export const projects = [
       lat: -1.3197,
       lng: 36.7076,
     },
-    technician: { name: 'Winnie Adhiambo', phone: '+254 700 928 315' },
+    technicianId: 'TECH-006',
     dates: { start: '2025-11-01', targetEnd: '2026-02-10' },
     scope:
       'Modernization of 4 passenger elevators including new controllers, machine-room-less drives, and cab interior refurbishment across the office park.',

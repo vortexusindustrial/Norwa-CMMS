@@ -1,6 +1,6 @@
 // Single source of truth for asset status. Every status-derived visual —
 // tree dots, detail badges, and summary stats — reads from ASSET_STATUS_META
-// so they can never drift out of sync. Mirrors the pattern in projects.js.
+// so they can never drift out of sync. 
 export const ASSET_STATUSES = ['operational', 'under_maintenance', 'fault', 'decommissioned']
 
 export const ASSET_STATUS_META = {
@@ -52,7 +52,6 @@ function trend(...values) {
 // e.g. a pump under its chiller plant) — independent of locationId, which
 // places the asset in the location registry above.
 export const assets = [
-  // --- Two Rivers Mall HVAC ---
   {
     id: 'AST-1000',
     acquisitionCost: 12500000,
@@ -159,7 +158,7 @@ export const assets = [
     },
   },
 
-  // --- Garden City Mall backup power ---
+
   {
     id: 'AST-2000',
     acquisitionCost: 18500000,
@@ -212,7 +211,6 @@ export const assets = [
     },
   },
 
-  // --- JKIA cold storage ---
   {
     id: 'AST-3000',
     acquisitionCost: 3500000,
@@ -318,7 +316,6 @@ export const assets = [
     },
   },
 
-  // --- Karen Business Park elevators ---
   {
     id: 'AST-4000',
     acquisitionCost: 2500000,
@@ -427,7 +424,6 @@ export function rootAssets() {
   return assets.filter((asset) => asset.parentId === null)
 }
 
-// Walks up the parentId chain, root-first, excluding the asset itself.
 export function ancestorsOf(assetId) {
   const chain = []
   let current = assetById(assetId)
@@ -438,7 +434,6 @@ export function ancestorsOf(assetId) {
   return chain
 }
 
-// Every asset below this one in the hierarchy, at any depth.
 export function descendantsOf(assetId) {
   const found = []
   let frontier = childrenOf(assetId)
@@ -454,6 +449,25 @@ export function descendantsOf(assetId) {
 // levels down (e.g. a condensing unit fault under an otherwise-fine chamber).
 export function hasCriticalDescendant(assetId) {
   return descendantsOf(assetId).some((asset) => asset.health.status === 'critical')
+}
+
+// Worse-wins ranking for rolling lifecycle status up a hierarchy.
+// 'decommissioned' ranks below 'operational' on purpose: a retired child
+// (e.g. a decommissioned pump under an otherwise-fine chiller plant) is not
+// a problem and shouldn't make the parent look degraded.
+const STATUS_SEVERITY = { decommissioned: 0, operational: 1, under_maintenance: 2, fault: 3 }
+
+// An asset's displayed status is the worst status anywhere in its own
+// subtree, so a collapsed parent (e.g. Elevator Bank A) can't read
+// 'operational' while a child (e.g. Elevator Car 2) is under maintenance.
+// Leaf assets have no descendants, so this is always just their own status.
+export function rolledUpStatus(assetId) {
+  const asset = assetById(assetId)
+  if (!asset) return null
+  return [asset, ...descendantsOf(assetId)].reduce(
+    (worst, a) => (STATUS_SEVERITY[a.status] > STATUS_SEVERITY[worst] ? a.status : worst),
+    asset.status
+  )
 }
 
 export function locationById(id) {
@@ -477,6 +491,23 @@ export function locationPath(locationId) {
     current = current.parentId ? locationById(current.parentId) : null
   }
   return path
+}
+
+// Given the asset ids a user's work orders point at directly, returns the
+// full connected set needed to render them in the tree: each asset, its
+// ancestors (so the chain stays walkable from a root the tree can filter
+// down to), and its descendants (so related sub-components — e.g. a pump's
+// siblings under the same chiller plant — stay visible too). Powers scoped
+// (team) and view-level (own) asset access for supervisors and technicians.
+export function connectedAssetSet(assetIds) {
+  const ids = new Set()
+  assetIds.forEach((id) => {
+    if (!assetById(id)) return
+    ids.add(id)
+    ancestorsOf(id).forEach((ancestor) => ids.add(ancestor.id))
+    descendantsOf(id).forEach((descendant) => ids.add(descendant.id))
+  })
+  return ids
 }
 
 export function assetsAtLocation(locationId) {
