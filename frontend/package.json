@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@googlemaps/js-api-loader": "^2.1.1",
     "frappe-ui": "^0.1.278",
     "lucide-vue-next": "^1.0.0",
     "pinia": "^3.0.4",

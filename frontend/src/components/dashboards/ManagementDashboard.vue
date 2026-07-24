@@ -1,9 +1,11 @@
 <script setup>
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { Wrench, Boxes, Clock, ClipboardCheck, AlertTriangle, Plus, Package, Users } from 'lucide-vue-next'
 import { usePermissions } from '../../composables/usePermissions'
 
 const { canView } = usePermissions()
+const router = useRouter()
 
 const stats = [
   { label: 'Open Work Orders', value: '47', hint: '12 high priority', icon: Wrench, accent: 'border-l-blue-500' },
@@ -31,19 +33,26 @@ const statusStyles = {
 }
 
 const allQuickActions = [
-  { label: 'Emergency Work Order', icon: AlertTriangle, emphasis: true, section: null },
-  { label: 'New Work Order', icon: Plus, section: null },
-  { label: 'Review BoM Approvals', icon: ClipboardCheck, section: 'bom' },
-  { label: 'Purchase Requests', icon: Package, section: 'procurement' },
-  { label: 'Asset Inspection', icon: Boxes, section: 'assets' },
-  { label: 'User & Role Management', icon: Users, section: 'administration' },
+  { label: 'Emergency Work Order', icon: AlertTriangle, emphasis: true, section: null, to: { name: 'work-orders', query: { create: 'emergency' } } },
+  { label: 'New Work Order', icon: Plus, section: null, to: { name: 'work-orders', query: { create: 'true' } } },
+  { label: 'Review BoM Approvals', icon: ClipboardCheck, section: 'bom', to: { name: 'bill-of-materials', query: { tab: 'approvals' } } },
+  { label: 'Purchase Requests', icon: Package, section: 'procurement', to: { name: 'procurement', query: {tab: 'requests'} } },
+  { label: 'Asset Inspection', icon: Boxes, section: 'assets', to: { name: 'assets' } },
+  { label: 'User & Role Management', icon: Users, section: 'administration', to: { name: 'administration' } },
 ]
 
-// Manager sees everything except the admin-only action — matches
-// Administration being 'none' for Maintenance Manager in the access matrix.
+
 const quickActions = computed(() =>
   allQuickActions.filter((action) => !action.section || canView(action.section))
 )
+
+function handleQuickAction(action) {
+  if (action.to) {
+    router.push(action.to)
+  } else {
+    // Placeholder for actions that don't navigate to a route
+  }
+}
 </script>
 
 <template>
@@ -71,9 +80,12 @@ const quickActions = computed(() =>
       <div class="rounded-lg border border-gray-200 bg-white p-5 lg:col-span-2">
         <div class="flex items-center justify-between">
           <h3 class="text-sm font-semibold text-gray-900">Recent Work Orders</h3>
-          <RouterLink to="/cmms/app/work-orders" class="text-sm font-medium text-gray-900 hover:underline">
+          <button
+            @click="router.push({ name: 'work-orders' })"
+            class="text-sm font-medium text-gray-900 hover:underline"
+          >
             View All
-          </RouterLink>
+          </button>
         </div>
         <ul class="mt-4 flex flex-col gap-3">
           <li
@@ -104,6 +116,7 @@ const quickActions = computed(() =>
             v-for="action in quickActions"
             :key="action.label"
             type="button"
+            @click="handleQuickAction(action)"
             class="flex items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-sm font-medium"
             :class="
               action.emphasis
